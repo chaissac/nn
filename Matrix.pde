@@ -2,6 +2,7 @@ class PMatrix {
 
   int rows, cols;
   Double[] data;
+  final String version = "1.0";
 
   PMatrix(int _rows, int _cols) {
     if (_rows<1 || _cols <1) {
@@ -39,7 +40,15 @@ class PMatrix {
       }
     }
   }
-
+  String toJson() {
+    JSONObject obj = new JSONObject();
+    obj.put( "class", "PMatrix" );
+    obj.put( "version", version  );
+    obj.put( "rows", rows    );
+    obj.put( "cols", cols    );
+    obj.put( "data", data    );
+    return obj.toString();
+  }
   Double[] toArray() {
     return data.clone();
   }
@@ -51,9 +60,10 @@ class PMatrix {
 
   void transpose() {
     Double[] copy = data.clone(); 
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < cols; j++) {
-        data[j*rows+i] = copy[i*cols+j];
+
+    for (int j = 0; j < rows; j++) {
+      for (int i = 0; i < cols; i++) {
+        data[j+i*rows] = copy[i+j*cols];
       }
     }
     rows = cols;
@@ -71,7 +81,11 @@ class PMatrix {
       data[i] = Math.random()*2-1;
     }
   }
-
+  void randomize(int a, int b) {
+    for (int i = 0; i<data.length; i++) {
+      data[i] = (double)floor(random(a, b));
+    }
+  }
   void sub(Double n) {
     for (int i = 0; i<data.length; i++) {
       data[i]-=n;
@@ -113,7 +127,7 @@ class PMatrix {
   }
   void mult(Double n) {
     for (int i = 0; i<data.length; i++) {
-      data[i]+=n;
+      data[i]*=n;
     }
   }
 
@@ -139,24 +153,50 @@ class PMatrix {
   void map(String func) {
     switch (func) {
     case "sigmoid" : 
-      for (int i = 0; i<data.length; i++) data[i]=1/(1-Math.exp(-data[i])) ; 
+      for (int i = 0; i<data.length; i++) data[i] = 1/(1+Math.exp(-data[i])) ; 
       break;
     case "dsigmoid" : 
-      for (int i = 0; i<data.length; i++) data[i]=data[i]*(1-data[i]); 
+      for (int i = 0; i<data.length; i++) data[i] = data[i]*(1.-data[i]); 
       break;
     case "tanh" : 
-      for (int i = 0; i<data.length; i++) data[i]=(double)Math.tanh(data[i]) ; 
+      for (int i = 0; i<data.length; i++) data[i] = Math.tanh(data[i]) ; 
       break;
     case "dtanh" : 
-      for (int i = 0; i<data.length; i++) data[i]=1-data[i]*data[i] ; 
+      for (int i = 0; i<data.length; i++) data[i] = 1-data[i]*data[i] ; 
+      break;    
+    case "step" : 
+      for (int i = 0; i<data.length; i++) data[i] = (double)((data[i]>=0)?1:-1) ; 
+      break;
+    case "dstep" : 
+      for (int i = 0; i<data.length; i++) data[i] = (double)((data[i]>=0)?1:-1) ; 
+      break;    
+    case "relu" : 
+      for (int i = 0; i<data.length; i++) data[i] = (double)((data[i]>0)?data[i]:0) ; 
+      break;
+    case "drelu" : 
+      for (int i = 0; i<data.length; i++) data[i] = (double)((data[i]>0)?1:0) ; 
       break;
     default:
       error("Unknown map");
     }
   }
-
   void debug() {
-    println("Matrix "+rows+","+cols+" : ");
-    printArray(data);
+    debug("??");
+  }
+
+  void debug(String m) {
+    debug(m, false);
+  }
+  void debug(String m, Boolean b) {
+    String s = (b)?"\n":" ";
+    print(String.format("%16s", "Matrix "+m)+" ( "+rows+" , "+cols+" ) = "+s+"[ ");
+    for (int i = 0; i<data.length; i++) {
+      if (i>0) {
+        if (i%cols==0) print(" ]   "+s+"[ "); 
+        else print (" ; ");
+      }
+      print(String.format("%06.2f", data[i]));
+    }
+    println(" ]");
   }
 }

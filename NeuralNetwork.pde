@@ -3,8 +3,9 @@ class NeuralNetwork {
   PMatrix weightsIH, weightsHO, biasH, biasO ;
   double learningRate ;
   String activationFunction ;
+  final String version = "0.3";
 
-  NeuralNetwork(int input, int hidden, int output) {
+  NeuralNetwork(int input, int hidden, int output, String fn) {
 
     inputNodes = input ;
     hiddenNodes = hidden ;
@@ -20,8 +21,8 @@ class NeuralNetwork {
     biasH.randomize();
     biasO.randomize();
 
-    learningRate = 0.5;
-    activationFunction = "sigmoid";
+    setLearningRate(0.5);
+    setActivationFunction(fn);
   }
 
   NeuralNetwork(NeuralNetwork n) {
@@ -37,16 +38,55 @@ class NeuralNetwork {
     biasO = n.biasO.clone();
 
     learningRate = n.learningRate;
-    activationFunction = n.activationFunction;
+    setActivationFunction(n.activationFunction);
   }
   void setLearningRate(Double l) {
     learningRate = learningRate;
   }
 
+  void setLearningRate(double lr) {
+    learningRate = lr;
+  }   
+  void setLearningRate(float lr) {
+    learningRate = (double)lr;
+  }   
+  void setLearningRate(int lr) {
+    learningRate = (double)lr;
+  } 
+  String checkFunction(String fn) {
+    fn.toLowerCase();
+    switch (fn) {
+    case "sigmoid":
+    case "tanh":
+    case "step":
+    case "relu":
+      return fn;
+    default:
+      return "sigmoid";
+    }
+  }
   void setActivationFunction(String func) {
-    activationFunction = func;
+    activationFunction = checkFunction(func);
   }  
-
+  String toJson() {
+    JSONObject json = new JSONObject();
+    json.put( "class", "NeuralNetwork" );
+    json.put( "version", version );
+    json.put( "inputNodes", inputNodes );
+    json.put( "hiddenNodes", hiddenNodes );
+    json.put( "outputNodes", outputNodes );
+    json.put( "learningRate", learningRate );
+    json.put( "activationFunction", activationFunction );
+    json.put( "weightsIH", weightsIH.toJson() );
+    json.put( "weightsHO", weightsHO.toJson() );
+    json.put( "biasH", biasH.toJson() );
+    json.put( "biasO", biasO.toJson() );
+    return json.toString();
+  }  
+  void save(String file) {
+    String json = toJson();
+    println(json);
+  }
   Double[] predict(Double[] inputArray) {
 
     // Generating the Hidden Outputs
@@ -68,6 +108,7 @@ class NeuralNetwork {
   }
 
   void train(Double[] inputArray, Double[] targetArray) {
+
     // Generating the Hidden Outputs
     PMatrix inputs = new PMatrix(inputArray);
     PMatrix hidden = weightsIH.clone();
