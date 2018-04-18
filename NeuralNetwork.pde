@@ -1,95 +1,133 @@
 class NeuralNetwork {
-  int input, hidden, output ;
-  Matrix weights_ih, weights_ho, bias_h, bias_o ;
-  float learning_rate ;
-  
-  NeuralNetwork(int _input, int _hidden, int _output) {
-    
-    input = _input ;
-    hidden = _hidden ;
-    output = _output ;
-    
-    weights_ih = new Matrix(hidden, input);
-    weights_ho = new Matrix(output, hidden);
-    weights_ih.randomize();
-    weights_ho.randomize();
+  int inputNodes, hiddenNodes, outputNodes ;
+  PMatrix weightsIH, weightsHO, biasH, biasO ;
+  double learningRate ;
+  String activationFunction ;
 
-    bias_h = new Matrix(this.hidden_nodes, 1);
-    bias_o = new Matrix(this.output_nodes, 1);
-    bias_h.randomize();
-    bias_o.randomize();
-    
-    learning_rate = 0.1;
+  NeuralNetwork(int input, int hidden, int output) {
+
+    inputNodes = input ;
+    hiddenNodes = hidden ;
+    outputNodes = output ;
+
+    weightsIH = new PMatrix(hiddenNodes, inputNodes);
+    weightsHO = new PMatrix(outputNodes, hiddenNodes);
+    weightsIH.randomize();
+    weightsHO.randomize();
+
+    biasH = new PMatrix(hiddenNodes, 1);
+    biasO = new PMatrix(outputNodes, 1);
+    biasH.randomize();
+    biasO.randomize();
+
+    learningRate = 0.5;
+    activationFunction = "sigmoid";
   }
 
-  Float[] feedforward(Float[] inputArray) {
+  NeuralNetwork(NeuralNetwork n) {
 
-    inputs = Matrix.fromArray(input_array);
-    hidden = Matrix.multiply(this.weights_ih, inputs);
-    hidden.add(this.bias_h);
+    inputNodes = n.inputNodes ;
+    hiddenNodes = n.hiddenNodes ;
+    outputNodes = n.outputNodes ;
 
-    hidden.map(sigmoid);
-    output = Matrix.multiply(this.weights_ho, hidden);
-    output.add(this.bias_o);
-    output.map(sigmoid);
+    weightsIH = n.weightsIH.clone();
+    weightsHO = n.weightsHO.clone();
+
+    biasH = n.biasH.clone();
+    biasO = n.biasO.clone();
+
+    learningRate = n.learningRate;
+    activationFunction = n.activationFunction;
+  }
+  void setLearningRate(Double l) {
+    learningRate = learningRate;
+  }
+
+  void setActivationFunction(String func) {
+    activationFunction = func;
+  }  
+
+  Double[] predict(Double[] inputArray) {
+
+    // Generating the Hidden Outputs
+    PMatrix inputs = new PMatrix(inputArray);
+    PMatrix hidden = weightsIH.clone();
+    hidden.product(inputs);
+    hidden.add(biasH);
+    // activation function!
+    hidden.map(activationFunction);
+
+    // Generating the output's output!
+    PMatrix output = weightsHO.clone() ;
+    output.product(hidden);
+    output.add(biasO);
+    output.map(activationFunction);
 
     // Sending back to the caller!
     return output.toArray();
   }
-  /*
-  train(input_array, target_array) {
-   // Generating the Hidden Outputs
-   let inputs = Matrix.fromArray(input_array);
-   let hidden = Matrix.multiply(this.weights_ih, inputs);
-   hidden.add(this.bias_h);
-   // activation function!
-   hidden.map(sigmoid);
-   
-   // Generating the output's output!
-   let outputs = Matrix.multiply(this.weights_ho, hidden);
-   outputs.add(this.bias_o);
-   outputs.map(sigmoid);
-   
-   // Convert array to matrix object
-   let targets = Matrix.fromArray(target_array);
-   
-   // Calculate the error
-   // ERROR = TARGETS - OUTPUTS
-   let output_errors = Matrix.subtract(targets, outputs);
-   
-   // let gradient = outputs * (1 - outputs);
-   // Calculate gradient
-   let gradients = Matrix.map(outputs, dsigmoid);
-   gradients.multiply(output_errors);
-   gradients.multiply(this.learning_rate);
-   
-   
-   // Calculate deltas
-   let hidden_T = Matrix.transpose(hidden);
-   let weight_ho_deltas = Matrix.multiply(gradients, hidden_T);
-   
-   // Adjust the weights by deltas
-   this.weights_ho.add(weight_ho_deltas);
-   // Adjust the bias by its deltas (which is just the gradients)
-   this.bias_o.add(gradients);
-   
-   // Calculate the hidden layer errors
-   let who_t = Matrix.transpose(this.weights_ho);
-   let hidden_errors = Matrix.multiply(who_t, output_errors);
-   
-   // Calculate hidden gradient
-   let hidden_gradient = Matrix.map(hidden, dsigmoid);
-   hidden_gradient.multiply(hidden_errors);
-   hidden_gradient.multiply(this.learning_rate);
-   
-   // Calcuate input->hidden deltas
-   let inputs_T = Matrix.transpose(inputs);
-   let weight_ih_deltas = Matrix.multiply(hidden_gradient, inputs_T);
-   
-   this.weights_ih.add(weight_ih_deltas);
-   // Adjust the bias by its deltas (which is just the gradients)
-   this.bias_h.add(hidden_gradient);
-   
-   }
-   */
+
+  void train(Double[] inputArray, Double[] targetArray) {
+    // Generating the Hidden Outputs
+    PMatrix inputs = new PMatrix(inputArray);
+    PMatrix hidden = weightsIH.clone();
+    hidden.product(inputs);
+    hidden.add(biasH);
+    // activation function!
+    hidden.map(activationFunction);
+
+    // Generating the output's output!
+    PMatrix outputs = weightsHO.clone() ;
+    outputs.product(hidden);
+    outputs.add(biasO);
+    outputs.map(activationFunction);
+
+    // Convert array to matrix object
+    PMatrix targets = new PMatrix(targetArray);
+
+    // Calculate the error
+    // ERROR = TARGETS - OUTPUTS
+    PMatrix outputErrors = targets.clone();
+    outputErrors.sub(outputs);
+
+    // let gradient = outputs * (1 - outputs);
+    // Calculate gradient
+    PMatrix gradient = outputs.clone();
+    gradient.map("d"+activationFunction);
+    gradient.mult(outputErrors);
+    gradient.mult(learningRate);
+
+    // Calculate deltas
+    PMatrix hiddenT = hidden.clone();
+    hiddenT.transpose();
+    PMatrix weightHODeltas = gradient.clone();
+    weightHODeltas.product(hiddenT);
+
+    // Adjust the weights by deltas
+    weightsHO.add(weightHODeltas);
+    // Adjust the bias by its deltas (which is just the gradients)
+    biasO.add(gradient);
+
+    // Calculate the hidden layer errors
+    PMatrix hiddenErrors = weightsHO.clone();
+    hiddenErrors.transpose();
+    hiddenErrors.product(outputErrors);
+
+    // Calculate hidden gradient
+    PMatrix hiddenGradient = hidden.clone();
+    hiddenGradient.map("d"+activationFunction);
+    hiddenGradient.mult(hiddenErrors);
+    hiddenGradient.mult(learningRate);
+
+    // Calculate input->hidden deltas
+    PMatrix inputsT = inputs.clone();
+    inputsT.transpose();
+    PMatrix weightIHDeltas = hiddenGradient.clone();
+    weightIHDeltas.product(inputsT);
+
+    // Adjust the weights by deltas
+    weightsIH.add(weightIHDeltas);
+    // Adjust the bias by its deltas (which is just the gradients)
+    biasH.add(hiddenGradient);
+  }
 }
