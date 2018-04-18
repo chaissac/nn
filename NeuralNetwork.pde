@@ -40,9 +40,6 @@ class NeuralNetwork {
     learningRate = n.learningRate;
     setActivationFunction(n.activationFunction);
   }
-  void setLearningRate(Double l) {
-    learningRate = learningRate;
-  }
 
   void setLearningRate(double lr) {
     learningRate = lr;
